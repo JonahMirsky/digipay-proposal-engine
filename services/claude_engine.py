@@ -71,7 +71,7 @@ Return ONLY valid JSON:
 def _call_claude(system_prompt, user_prompt, api_key=''):
     key = api_key or os.environ.get('ANTHROPIC_API_KEY', '')
     if not key:
-        raise ValueError('API key required. Paste your Anthropic key in the nav bar.')
+        raise ValueError('ANTHROPIC_API_KEY not configured. Set it in .env or environment variables.')
 
     client = anthropic.Anthropic(api_key=key)
     msg = client.messages.create(

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, send_file
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET', secrets.token_hex(32))
 
