@@ -1298,32 +1298,31 @@ textarea::placeholder { color: var(--text-dim); }
 
 .home-hero-cycle {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 14px;
   margin-top: 12px;
   margin-bottom: 16px;
+  white-space: nowrap;
 }
 
 .home-cycle-label {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text-mid);
   letter-spacing: -0.3px;
 }
 
 .home-cycle-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  height: 52px;
-  width: 280px;
+  height: 36px;
 }
 
 .home-cycle-wrap img {
-  height: 46px;
+  height: 36px;
   width: auto;
-  max-width: 260px;
+  max-width: 200px;
   object-fit: contain;
   transition: opacity 0.3s ease;
 }
