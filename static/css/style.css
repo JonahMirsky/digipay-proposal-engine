@@ -1298,22 +1298,26 @@ textarea::placeholder { color: var(--text-dim); }
 
 .home-hero-cycle {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-mid);
+  gap: 10px;
   margin-top: 12px;
   margin-bottom: 16px;
-  letter-spacing: -0.5px;
+}
+
+.home-cycle-label {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-mid);
+  letter-spacing: -0.3px;
 }
 
 .home-cycle-wrap {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  height: 50px;
+  justify-content: center;
+  height: 52px;
+  width: 280px;
 }
 
 .home-cycle-wrap img {
@@ -1490,8 +1494,9 @@ textarea::placeholder { color: var(--text-dim); }
   .nav-tabs { margin-left: 8px; }
   .brand-grid { grid-template-columns: 1fr 1fr; }
   .tpl-grid { grid-template-columns: 1fr 1fr; }
-  .home-hero-cycle { font-size: 22px; }
-  .home-cycle-wrap img { height: 34px; }
+  .home-cycle-label { font-size: 20px; }
+  .home-cycle-wrap { height: 44px; width: 240px; }
+  .home-cycle-wrap img { height: 36px; }
 }
 
 /* Mobile */
@@ -1520,8 +1525,10 @@ textarea::placeholder { color: var(--text-dim); }
   h1 { font-size: 28px; letter-spacing: -1px; }
   .sub { font-size: 13px; margin-bottom: 24px; }
   .hero-badge { font-size: 10px; padding: 4px 10px; margin-bottom: 14px; }
-  .home-hero-cycle { font-size: 18px; gap: 10px; margin-top: 8px; }
-  .home-cycle-wrap img { height: 28px; max-width: 160px; }
+  .home-cycle-label { font-size: 16px; }
+  .home-hero-cycle { gap: 8px; margin-top: 8px; }
+  .home-cycle-wrap { height: 38px; width: 200px; }
+  .home-cycle-wrap img { height: 28px; max-width: 180px; }
   .brand-grid { grid-template-columns: 1fr; gap: 10px; }
   .brand-card { padding: 14px 16px; gap: 12px; }
   .brand-card-logo { width: 72px; height: 36px; }
@@ -1593,7 +1600,7 @@ textarea::placeholder { color: var(--text-dim); }
 /* Small phones */
 @media (max-width: 380px) {
   h1 { font-size: 24px; }
-  .home-hero-cycle { font-size: 16px; }
+  .home-cycle-label { font-size: 14px; }
   .home-cycle-wrap img { height: 24px; }
   .nav-tab span { display: none; }
   .nav-key input { width: 60px; }
