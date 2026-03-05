@@ -917,11 +917,11 @@ textarea::placeholder { color: var(--text-dim); }
 
 .preview .doc-body table {
   width: 100%;
-  min-width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   table-layout: auto;
-  word-break: break-word;
+  display: block;
+  overflow-x: auto;
 }
 
 .preview .doc-body th {
@@ -941,6 +941,11 @@ textarea::placeholder { color: var(--text-dim); }
   border-bottom: 1px solid #eee;
   color: #333;
   font-size: 13px;
+  white-space: nowrap;
+}
+
+.preview .doc-body td:first-child {
+  white-space: normal;
 }
 
 .preview .doc-body tr:nth-child(even) td { background: #f8f9fa; }
