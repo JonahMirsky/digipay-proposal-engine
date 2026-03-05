@@ -208,6 +208,20 @@ function goHome() {
   localStorage.removeItem('dp_brand');
   currentBrand = null;
 
+  // Reset theme to default black
+  const s = document.documentElement.style;
+  s.setProperty('--bg', '#060609');
+  s.setProperty('--surface', '#12121a');
+  s.setProperty('--accent', '#76D7FA');
+  s.setProperty('--accent-bright', '#a0e8ff');
+  s.setProperty('--accent-dim', 'rgba(118, 215, 250, 0.08)');
+  s.setProperty('--accent-mid', 'rgba(118, 215, 250, 0.15)');
+  s.setProperty('--accent-border', 'rgba(118, 215, 250, 0.2)');
+  s.setProperty('--accent-glow', 'rgba(118, 215, 250, 0.06)');
+  s.setProperty('--gradient', 'linear-gradient(135deg, #76D7FA 0%, #4facfe 50%, #7c6df0 100%)');
+  s.setProperty('--gradient-subtle', 'linear-gradient(135deg, rgba(118,215,250,0.12) 0%, rgba(124,109,240,0.08) 100%)');
+  s.setProperty('--shadow-glow', '0 0 40px rgba(118, 215, 250, 0.08)');
+
   $('home').style.display = '';
   $('home').classList.add('active');
   $('engine').style.display = 'none';
