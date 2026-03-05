@@ -1,6 +1,6 @@
 """Multi-Brand Proposal Engine."""
 
-import io, os, secrets, time, threading, subprocess
+import io, os, secrets, time, threading
 from datetime import datetime, timezone
 from flask import Flask, render_template, request, jsonify, send_file
 from dotenv import load_dotenv
@@ -121,14 +121,20 @@ def serve_pdf(token):
                      as_attachment=True, download_name=f'{brand}-Document.pdf')
 
 
-BUG_REPORT_REPO = os.environ.get('BUG_REPORT_REPO', 'jonah-sdm/digipay-proposal-engine')
+BUG_REPORT_REPO = os.environ.get('BUG_REPORT_REPO', 'JonahMirsky/digipay-proposal-engine')
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
 
 
 @app.route('/api/report-bug', methods=['POST'])
 def report_bug():
+    import requests as http
     data = request.get_json()
     if not data or not data.get('error'):
         return jsonify(error='No error provided'), 400
+
+    token = GITHUB_TOKEN
+    if not token:
+        return jsonify(error='GITHUB_TOKEN not configured'), 500
 
     error_msg = data['error']
     source_text = (data.get('source_text') or '')[:2000]
@@ -137,33 +143,29 @@ def report_bug():
     ts = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
 
     title = f"[Bug Report] {error_msg[:80]}"
-    body = f"""## Bug Report
-
-**Error:** {error_msg}
-**Brand:** {brand_name}
-**Timestamp:** {ts}
-**Context:** {context}
-
-### Source Text (truncated)
-```
-{source_text or 'N/A'}
-```
-"""
+    body = (
+        f"## Bug Report\n\n"
+        f"**Error:** {error_msg}\n"
+        f"**Brand:** {brand_name}\n"
+        f"**Timestamp:** {ts}\n"
+        f"**Context:** {context}\n\n"
+        f"### Source Text (truncated)\n```\n{source_text or 'N/A'}\n```"
+    )
 
     try:
-        proc = subprocess.run(
-            ['gh', 'issue', 'create', '--repo', BUG_REPORT_REPO,
-             '--title', title, '--body', body, '--label', 'bug'],
-            capture_output=True, text=True, timeout=15,
+        r = http.post(
+            f'https://api.github.com/repos/{BUG_REPORT_REPO}/issues',
+            headers={
+                'Authorization': f'token {token}',
+                'Accept': 'application/vnd.github.v3+json',
+            },
+            json={'title': title, 'body': body, 'labels': ['bug']},
+            timeout=15,
         )
-        if proc.returncode != 0:
-            return jsonify(error=proc.stderr.strip() or 'gh issue create failed'), 500
-        issue_url = proc.stdout.strip()
-        return jsonify(url=issue_url)
-    except FileNotFoundError:
-        return jsonify(error='gh CLI not installed on server'), 500
-    except subprocess.TimeoutExpired:
-        return jsonify(error='GitHub request timed out'), 500
+        if r.status_code not in (200, 201):
+            msg = r.json().get('message', 'GitHub API error')
+            return jsonify(error=msg), 500
+        return jsonify(url=r.json()['html_url'])
     except Exception as e:
         return jsonify(error=str(e)), 500
 

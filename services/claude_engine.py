@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import anthropic
 
 
@@ -68,26 +69,73 @@ Return ONLY valid JSON:
 }}"""
 
 
+def _parse_json(text):
+    """Parse JSON from Claude response with repair attempts."""
+    clean = text.strip()
+    if clean.startswith('```'):
+        lines = clean.split('\n')
+        lines = lines[1:] if lines[0].startswith('```') else lines
+        lines = lines[:-1] if lines and lines[-1].strip() == '```' else lines
+        clean = '\n'.join(lines).strip()
+
+    # Attempt 1: direct parse
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError:
+        pass
+
+    # Attempt 2: extract outermost JSON object
+    start = clean.find('{')
+    end = clean.rfind('}')
+    if start >= 0 and end > start:
+        fragment = clean[start:end + 1]
+        try:
+            return json.loads(fragment)
+        except json.JSONDecodeError:
+            pass
+
+        # Attempt 3: fix trailing commas
+        fixed = re.sub(r',(\s*[}\]])', r'\1', fragment)
+        try:
+            return json.loads(fixed)
+        except json.JSONDecodeError:
+            pass
+
+    raise json.JSONDecodeError('Could not parse response', clean[:200], 0)
+
+
 def _call_claude(system_prompt, user_prompt, api_key=''):
     key = api_key or os.environ.get('ANTHROPIC_API_KEY', '')
     if not key:
         raise ValueError('ANTHROPIC_API_KEY not configured. Set it in .env or environment variables.')
 
     client = anthropic.Anthropic(api_key=key)
-    msg = client.messages.create(
-        model='claude-sonnet-4-20250514',
-        max_tokens=16000,
-        system=system_prompt,
-        messages=[{'role': 'user', 'content': user_prompt}],
-    )
+    raw_text = None
 
-    text = msg.content[0].text.strip()
-    if text.startswith('```'):
-        lines = text.split('\n')
-        lines = lines[1:] if lines[0].startswith('```') else lines
-        lines = lines[:-1] if lines and lines[-1].strip() == '```' else lines
-        text = '\n'.join(lines)
-    return json.loads(text)
+    for attempt in range(2):
+        if attempt == 0:
+            messages = [{'role': 'user', 'content': user_prompt}]
+        else:
+            messages = [
+                {'role': 'user', 'content': user_prompt},
+                {'role': 'assistant', 'content': raw_text},
+                {'role': 'user', 'content': 'Your response was not valid JSON. Return ONLY the JSON object with all strings properly escaped. No markdown, no commentary.'},
+            ]
+
+        msg = client.messages.create(
+            model='claude-sonnet-4-20250514',
+            max_tokens=16000,
+            system=system_prompt,
+            messages=messages,
+        )
+        raw_text = msg.content[0].text.strip()
+
+        try:
+            return _parse_json(raw_text)
+        except (json.JSONDecodeError, ValueError):
+            if attempt == 0:
+                continue
+            raise ValueError('Failed to parse AI response. Please try again.')
 
 
 def brandify(source_text, api_key='', brand_name='DigiPay'):

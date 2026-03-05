@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proposal Engine</title>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v={{ range(1,99999)|random }}">
 </head>
 <body>
   <div id="app">
@@ -19,9 +19,10 @@
         <div id="nav-home-mark" class="nav-home-mark">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
         </div>
-        <div id="nav-brand-switch" class="nav-brand-switch hide">
+        <div id="nav-brand-switch" class="nav-brand-switch">
           <button class="nav-brand-trigger" onclick="toggleBrandDropdown(event)">
-            <img id="nav-brand-logo" src="/static/img/logo.svg" alt="Proposal Engine" class="nav-logo">
+            <span id="nav-brand-text" class="nav-brand-text">Brands</span>
+            <img id="nav-brand-logo" src="/static/img/logo.svg" alt="Proposal Engine" class="nav-logo hide">
             <svg class="nav-brand-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div id="nav-brand-dropdown" class="nav-brand-dropdown"></div>
@@ -30,16 +31,7 @@
         <span class="nav-title" id="nav-title" style="display:none"></span>
         <span id="nav-brand-cycle" class="nav-brand-cycle hide"></span>
       </div>
-      <div id="nav-tabs-wrap" class="nav-tabs hide">
-        <button class="nav-tab active" onclick="switchTab('convert')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Convert
-        </button>
-        <button class="nav-tab" onclick="switchTab('templates')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          Templates
-        </button>
-      </div>
+      <div id="nav-tabs-wrap" class="nav-tabs hide"></div>
       <div class="nav-right"></div>
     </nav>
 
@@ -53,7 +45,7 @@
             <span class="home-cycle-label">Enter your</span>
             <span id="home-cycle-wrap" class="home-cycle-wrap"><img id="home-cycle-img" src="/static/img/logo-white.svg" alt="Brand"></span>
           </div>
-          <p class="sub">Choose which brand to generate proposals for. Same engine, your brand's identity.</p>
+          <p class="sub">One tool. Every brand.</p>
         </div>
         <div id="brand-grid" class="brand-grid"></div>
       </div>
@@ -72,9 +64,18 @@
         <div id="v-upload" class="view active">
           <div class="upload-wrap">
             <img id="hero-brand-logo" class="hero-brand-logo hide" src="" alt="">
-            <div class="hero-badge">DOCUMENT CONVERTER</div>
             <h1>Upload. Brand. <span class="accent-text">Done.</span></h1>
             <p class="sub">Drop any document and get it back as a polished, branded proposal.</p>
+            <div class="mode-toggle">
+              <button class="mode-btn active" id="mode-convert" onclick="switchTab('convert')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Convert Document
+              </button>
+              <button class="mode-btn" id="mode-templates" onclick="switchTab('templates')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                From Template
+              </button>
+            </div>
 
             <!-- Source toggle -->
             <div class="source-toggle">
@@ -201,9 +202,18 @@
         <!-- Template picker -->
         <div id="v-tpl-pick" class="view active">
           <div class="tpl-wrap">
-            <div class="hero-badge">DOCUMENT TEMPLATES</div>
             <h1>Start from a <span class="accent-text">template.</span></h1>
             <p class="sub">Pick a document type, fill in the details, and generate a branded document instantly.</p>
+            <div class="mode-toggle">
+              <button class="mode-btn" id="mode-convert-2" onclick="switchTab('convert')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Convert Document
+              </button>
+              <button class="mode-btn active" id="mode-templates-2" onclick="switchTab('templates')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                From Template
+              </button>
+            </div>
             <div class="tpl-grid" id="tpl-grid"></div>
           </div>
         </div>
@@ -283,6 +293,6 @@
     </div><!-- /engine -->
 
   </div>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js?v={{ range(1,99999)|random }}"></script>
 </body>
 </html>

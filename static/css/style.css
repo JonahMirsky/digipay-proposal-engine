@@ -188,6 +188,14 @@ body {
 
 .nav-logo { height: 30px; }
 
+.nav-brand-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mid);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
 .nav-divider {
   width: 1px;
   height: 20px;
@@ -296,6 +304,58 @@ body {
   padding: 5px 14px;
   border-radius: 20px;
   margin-bottom: 20px;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 28px;
+  justify-content: center;
+}
+
+.mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 32px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  min-width: 190px;
+}
+
+.mode-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.mode-btn.active {
+  background: var(--gradient);
+  color: #0d1117;
+  border: none;
+  box-shadow: 0 4px 24px var(--accent-dim);
+}
+
+.mode-btn.active:hover {
+  opacity: 0.9;
+  background: var(--gradient);
+}
+
+.mode-btn svg {
+  opacity: 0.5;
+}
+
+.mode-btn.active svg {
+  opacity: 1;
+  stroke: #0d1117;
 }
 
 /* ── HEADINGS ── */
@@ -823,8 +883,8 @@ textarea::placeholder { color: var(--text-dim); }
   font-size: 16px;
   font-weight: 700;
   color: #0d1117;
-  margin: 28px 0 10px;
-  padding-bottom: 6px;
+  margin: 20px 0 8px;
+  padding-bottom: 5px;
   border-bottom: 2px solid var(--accent);
   display: inline-block;
 }
@@ -834,16 +894,24 @@ textarea::placeholder { color: var(--text-dim); }
 .preview .doc-body p {
   font-size: 14px;
   color: #444;
-  line-height: 1.7;
-  margin-bottom: 10px;
+  line-height: 1.55;
+  margin: 0 0 8px;
 }
 
+.preview .doc-body p:last-child { margin-bottom: 0; }
+
 .preview .doc-body strong { color: #0d1117; }
+
+/* Bold-only paragraphs act as sub-headings — tighten gap to following list */
+.preview .doc-body p + ul,
+.preview .doc-body p + ol {
+  margin-top: 0;
+}
 
 .preview .doc-body .table-wrap {
   width: 100%;
   overflow-x: auto;
-  margin: 14px 0 20px;
+  margin: 10px 0 14px;
   border-radius: 8px;
 }
 
@@ -851,7 +919,7 @@ textarea::placeholder { color: var(--text-dim); }
   width: 100%;
   min-width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
   table-layout: auto;
   word-break: break-word;
 }
@@ -859,7 +927,7 @@ textarea::placeholder { color: var(--text-dim); }
 .preview .doc-body th {
   background: #0d1117;
   color: var(--accent);
-  padding: 9px 12px;
+  padding: 8px 12px;
   text-align: left;
   font-size: 9px;
   font-weight: 700;
@@ -869,24 +937,29 @@ textarea::placeholder { color: var(--text-dim); }
 }
 
 .preview .doc-body td {
-  padding: 8px 12px;
+  padding: 7px 12px;
   border-bottom: 1px solid #eee;
   color: #333;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .preview .doc-body tr:nth-child(even) td { background: #f8f9fa; }
 
 .preview .doc-body ul, .preview .doc-body ol {
-  margin: 8px 0 16px;
+  margin: 4px 0 10px;
   padding-left: 20px;
 }
 
 .preview .doc-body li {
   font-size: 14px;
   color: #444;
-  margin-bottom: 4px;
-  line-height: 1.6;
+  margin-bottom: 1px;
+  line-height: 1.45;
+}
+
+.preview .doc-body li p {
+  margin: 0;
+  line-height: inherit;
 }
 
 .preview .doc-footer {
@@ -1501,6 +1574,8 @@ textarea::placeholder { color: var(--text-dim); }
   .home-cycle-label { font-size: 20px; }
   .home-cycle-wrap { height: 44px; width: 240px; }
   .home-cycle-wrap img { height: 36px; }
+  .mode-toggle { flex-direction: column; gap: 10px; width: 100%; max-width: 400px; }
+  .mode-btn { min-width: 0; width: 100%; padding: 12px 20px; font-size: 14px; }
 }
 
 /* Mobile */

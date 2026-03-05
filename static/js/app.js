@@ -15,8 +15,8 @@ const BRANDS = {
     name: 'DigiPay',
     tagline: 'Digital payment solutions',
     accent: '#76D7FA',
-    bg: '#04080d',
-    surface: '#0c1620',
+    bg: '#04192a',
+    surface: '#0d2d4a',
     gradientEnd: '#4facfe',
     logo: '/static/img/logo.svg',
     logoWhite: '/static/img/logo-white.svg',
@@ -35,8 +35,8 @@ const BRANDS = {
     name: 'SDP',
     tagline: 'Secure Digital Payments',
     accent: '#3b9eff',
-    bg: '#030d18',
-    surface: '#081a30',
+    bg: '#041528',
+    surface: '#0c2a48',
     gradientEnd: '#6dc0ff',
     logo: '/static/img/logo-sdp.svg',
     logoWhite: '/static/img/logo-sdp-white.svg',
@@ -45,8 +45,8 @@ const BRANDS = {
     name: 'Finvaro',
     tagline: 'Next-gen financial infrastructure',
     accent: '#EAD9FD',
-    bg: '#0a090c',
-    surface: '#17141e',
+    bg: '#0e0620',
+    surface: '#1c1038',
     gradientEnd: '#b08cff',
     logo: '/static/img/logo-finvaro-black.png',
     logoWhite: '/static/img/logo-finvaro-white.png',
@@ -55,8 +55,8 @@ const BRANDS = {
     name: 'OwlPay',
     tagline: 'Crypto payment processing',
     accent: '#1a7d72',
-    bg: '#060a09',
-    surface: '#0f1817',
+    bg: '#021a16',
+    surface: '#0a302a',
     gradientEnd: '#2ab5a0',
     logo: '/static/img/logo-owlpay.svg',
     logoWhite: '/static/img/logo-owlpay-white.svg',
@@ -103,6 +103,56 @@ function stopBrandCycle() {
   if (cycleInterval) { clearInterval(cycleInterval); cycleInterval = null; }
 }
 
+/* ── Hash-based Routing ── */
+
+let _skipHash = false;
+
+function pushHash(hash) {
+  if (_skipHash) return;
+  const target = '#' + hash;
+  if (location.hash !== target) {
+    history.pushState(null, '', target);
+  }
+}
+
+function getHash() {
+  return location.hash.slice(1) || 'home';
+}
+
+function navigateToHash() {
+  const hash = getHash();
+  if (hash === 'home' || !hash) {
+    if (currentBrand) {
+      _skipHash = true;
+      goHome();
+      _skipHash = false;
+    }
+    return;
+  }
+
+  const parts = hash.split('/');
+  const brandId = parts[0];
+  const tab = parts[1] || 'convert';
+
+  if (!BRANDS[brandId]) {
+    _skipHash = true;
+    goHome();
+    _skipHash = false;
+    return;
+  }
+
+  _skipHash = true;
+  if (!currentBrand || currentBrand.id !== brandId) {
+    selectBrand(brandId);
+  }
+  if (tab !== currentTab) {
+    switchTab(tab);
+  }
+  _skipHash = false;
+}
+
+window.addEventListener('hashchange', navigateToHash);
+
 /* ── Brand Selection ── */
 
 function selectBrand(id) {
@@ -129,6 +179,8 @@ function selectBrand(id) {
   // Update nav — show brand logo + home btn, hide home mark
   $('nav-brand-logo').src = brand.logoWhite;
   $('nav-brand-logo').alt = brand.name;
+  $('nav-brand-logo').classList.remove('hide');
+  $('nav-brand-text').classList.add('hide');
   $('nav-brand-switch').classList.remove('hide');
   $('nav-home-btn').classList.remove('hide');
   $('nav-home-mark').classList.add('hide');
@@ -154,23 +206,32 @@ function selectBrand(id) {
 
 function goHome() {
   localStorage.removeItem('dp_brand');
+  currentBrand = null;
 
   $('home').style.display = '';
   $('home').classList.add('active');
   $('engine').style.display = 'none';
   $('nav-tabs-wrap').classList.add('hide');
   $('nav-home-btn').classList.add('hide');
-  $('nav-brand-switch').classList.add('hide');
+
+  // Keep brand dropdown visible with "Brands" text
+  $('nav-brand-switch').classList.remove('hide');
+  $('nav-brand-text').classList.remove('hide');
+  $('nav-brand-logo').classList.add('hide');
 
   // Show home mark
   $('nav-home-mark').classList.remove('hide');
+
+  // Populate dropdown with all brands
+  populateBrandDropdown();
 
   // Restart brand cycle
   startBrandCycle();
 
   // Reset state
   reset();
-  currentBrand = null;
+
+  pushHash('home');
 }
 
 /* ── Brand Dropdown ── */
@@ -206,10 +267,22 @@ document.addEventListener('click', closeBrandDropdown);
 
 function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.nav-tab[onclick*="${tab}"]`).classList.add('active');
   $(`tab-${tab}`).classList.add('active');
+
+  // Update mode toggle buttons
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  if (tab === 'convert') {
+    $('mode-convert') && $('mode-convert').classList.add('active');
+    $('mode-convert-2') && $('mode-convert-2').classList.add('active');
+  } else {
+    $('mode-templates') && $('mode-templates').classList.add('active');
+    $('mode-templates-2') && $('mode-templates-2').classList.add('active');
+  }
+
+  if (currentBrand) {
+    pushHash(tab === 'convert' ? currentBrand.id : `${currentBrand.id}/${tab}`);
+  }
 }
 
 /* ── View Management ── */
@@ -335,15 +408,24 @@ async function run() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, brand_name: brandName }),
     });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
+    let d;
+    try { d = await r.json(); } catch (_) {
+      throw new Error('Server returned an invalid response. Please try again.');
+    }
+    if (!r.ok) throw new Error(d.error || 'Generation failed');
     result = d;
     renderPreview($('preview'), result);
     show('v-result');
   } catch (e) {
     show('v-upload');
     $('err').textContent = e.message;
-    showReportBtn('report-btn', e.message, text, 'convert');
+    const btn = $('report-btn');
+    if (btn) {
+      btn.classList.remove('hide');
+      btn.textContent = 'Report Bug';
+      btn.disabled = false;
+      _bugCtx['report-btn'] = { error: e.message, source_text: text, context: 'convert' };
+    }
   }
 }
 
@@ -1086,15 +1168,24 @@ async function submitTemplate(e) {
         brand_name: brandName,
       }),
     });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
+    let d;
+    try { d = await r.json(); } catch (_) {
+      throw new Error('Server returned an invalid response. Please try again.');
+    }
+    if (!r.ok) throw new Error(d.error || 'Generation failed');
     result = d;
     renderPreview($('tpl-preview'), result);
     show('v-tpl-result');
   } catch (e) {
     show('v-tpl-form');
     $('tpl-err').textContent = e.message;
-    showReportBtn('tpl-report-btn', e.message, JSON.stringify(formData), 'template:' + currentTemplate.id);
+    const btn = $('tpl-report-btn');
+    if (btn) {
+      btn.classList.remove('hide');
+      btn.textContent = 'Report Bug';
+      btn.disabled = false;
+      _bugCtx['tpl-report-btn'] = { error: e.message, source_text: JSON.stringify(formData), context: 'template:' + currentTemplate.id };
+    }
   }
 }
 
@@ -1136,8 +1227,20 @@ function initApp() {
   initUploadListeners();
   populateTemplates();
   populateBrandCards();
-  // Always show home page — no auto-restore
-  startBrandCycle();
+
+  // Check for hash route on load
+  const hash = getHash();
+  const brandId = hash.split('/')[0];
+  if (hash !== 'home' && BRANDS[brandId]) {
+    _skipHash = true;
+    selectBrand(brandId);
+    const tab = hash.split('/')[1];
+    if (tab && tab !== 'convert') switchTab(tab);
+    _skipHash = false;
+  } else {
+    populateBrandDropdown();
+    startBrandCycle();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
