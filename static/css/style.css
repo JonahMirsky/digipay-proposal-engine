@@ -39,6 +39,110 @@ body {
   overflow-x: hidden;
 }
 
+/* ── Dynamic Background ── */
+#app {
+  position: relative;
+}
+
+#app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 60%, var(--accent-dim) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 20%, var(--accent-glow) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 50% 100%, rgba(124,109,240,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Animated floating orbs */
+.bg-orbs {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bg-orbs .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0;
+  animation: orbFloat 20s ease-in-out infinite;
+}
+
+.bg-orbs .orb:nth-child(1) {
+  width: 500px; height: 500px;
+  background: var(--accent);
+  opacity: 0.03;
+  top: -10%; left: -5%;
+  animation-duration: 25s;
+}
+
+.bg-orbs .orb:nth-child(2) {
+  width: 400px; height: 400px;
+  background: var(--accent);
+  opacity: 0.025;
+  bottom: -10%; right: -5%;
+  animation-duration: 30s;
+  animation-delay: -8s;
+}
+
+.bg-orbs .orb:nth-child(3) {
+  width: 300px; height: 300px;
+  background: #7c6df0;
+  opacity: 0.03;
+  top: 40%; left: 60%;
+  animation-duration: 22s;
+  animation-delay: -14s;
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.03; }
+  25% { transform: translate(40px, -60px) scale(1.1); opacity: 0.05; }
+  50% { transform: translate(-30px, 40px) scale(0.95); opacity: 0.03; }
+  75% { transform: translate(50px, 20px) scale(1.05); opacity: 0.04; }
+}
+
+/* Subtle dot grid */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--border) 0.5px, transparent 0.5px);
+  background-size: 32px 32px;
+  opacity: 0.3;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 70%);
+}
+
+/* Noise texture */
+.bg-noise {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Top gradient line under nav */
+.bg-topline {
+  position: fixed;
+  top: var(--nav-h);
+  left: 0; right: 0;
+  height: 1px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, var(--accent-border) 30%, var(--accent-border) 70%, transparent 100%);
+  opacity: 0.5;
+}
+
 /* ── NAV ── */
 #nav {
   position: fixed;
@@ -274,15 +378,7 @@ body {
 
 /* ── AMBIENT GLOW ── */
 .ambient-glow {
-  position: fixed;
-  top: -200px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  height: 500px;
-  background: radial-gradient(ellipse, rgba(118,215,250,0.04) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
+  display: none; /* replaced by bg-orbs */
 }
 
 /* ── TABS & VIEWS ── */

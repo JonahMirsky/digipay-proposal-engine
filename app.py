@@ -12,6 +12,10 @@ app.secret_key = os.environ.get('FLASK_SECRET', secrets.token_hex(32))
 pdf_store = {}
 pdf_lock = threading.Lock()
 
+html_store = {}
+html_lock = threading.Lock()
+HTML_EXPIRY = 7 * 24 * 3600  # 7 days
+
 
 @app.route('/')
 def index():
@@ -119,6 +123,50 @@ def serve_pdf(token):
     brand = entry.get('brand', 'DigiPay')
     return send_file(io.BytesIO(entry['bytes']), mimetype='application/pdf',
                      as_attachment=True, download_name=f'{brand}-Document.pdf')
+
+
+@app.route('/api/share', methods=['POST'])
+def share_doc():
+    data = request.get_json()
+    if not data:
+        return jsonify(error='No data'), 400
+
+    # Prune expired entries
+    now = time.time()
+    with html_lock:
+        expired = [k for k, v in html_store.items() if now - v['ts'] > HTML_EXPIRY]
+        for k in expired:
+            del html_store[k]
+
+    token = secrets.token_urlsafe(20)
+    with html_lock:
+        html_store[token] = {
+            'doc': data.get('doc', {}),
+            'brand_name': data.get('brand_name', 'DigiPay'),
+            'accent_color': data.get('accent_color', '#76D7FA'),
+            'logo': data.get('logo', ''),
+            'ts': now,
+        }
+
+    url = f'{request.host_url}view/{token}'
+    return jsonify(token=token, url=url)
+
+
+@app.route('/view/<token>')
+def view_doc(token):
+    with html_lock:
+        entry = html_store.get(token)
+    if not entry or time.time() - entry['ts'] > HTML_EXPIRY:
+        return 'This link has expired.', 404
+
+    doc = entry['doc']
+    return render_template('view.html',
+                           title=doc.get('title', 'Document'),
+                           sections=doc.get('sections', []),
+                           meta=doc.get('meta', {}),
+                           brand_name=entry['brand_name'],
+                           accent_color=entry['accent_color'],
+                           logo=entry['logo'])
 
 
 BUG_REPORT_REPO = os.environ.get('BUG_REPORT_REPO', 'JonahMirsky/digipay-proposal-engine')

@@ -539,6 +539,57 @@ async function downloadPdf() {
   } catch (e) { alert(e.message); }
 }
 
+/* ── Copy Share Link ── */
+
+async function copyShareLink() {
+  const data = result;
+  if (!data) return;
+
+  const brandName = currentBrand ? currentBrand.name : 'DigiPay';
+  const accent = currentBrand ? currentBrand.accent : '#76D7FA';
+  const logo = currentBrand ? currentBrand.logoWhite : '/static/img/logo-white.svg';
+
+  // Find all copy-link buttons and update state
+  const btns = document.querySelectorAll('.btn-copy-link');
+  btns.forEach(b => { b.disabled = true; b.querySelector('span').textContent = 'Generating...'; });
+
+  try {
+    const r = await fetch('/api/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        doc: data,
+        brand_name: brandName,
+        accent_color: accent,
+        logo: logo,
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Failed to generate link');
+
+    await navigator.clipboard.writeText(d.url);
+    btns.forEach(b => { b.querySelector('span').textContent = 'Link Copied'; });
+    setTimeout(() => {
+      btns.forEach(b => { b.disabled = false; b.querySelector('span').textContent = 'Copy Link'; });
+    }, 2500);
+  } catch (e) {
+    // Fallback: prompt user
+    try {
+      const r2 = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doc: data, brand_name: brandName, accent_color: accent, logo: logo }),
+      });
+      const d2 = await r2.json();
+      if (d2.url) prompt('Copy this link:', d2.url);
+      else alert('Failed to generate link');
+    } catch (_) {
+      alert('Failed to generate link');
+    }
+    btns.forEach(b => { b.disabled = false; b.querySelector('span').textContent = 'Copy Link'; });
+  }
+}
+
 /* ── Share ── */
 
 async function share(platform) {
