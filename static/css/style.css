@@ -915,13 +915,20 @@ textarea::placeholder { color: var(--text-dim); }
   border-radius: 8px;
 }
 
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 10px 0 14px;
+  border-radius: 8px;
+}
+
 .preview .doc-body table {
   width: 100%;
+  min-width: 400px;
   border-collapse: collapse;
   font-size: 13px;
   table-layout: auto;
-  display: block;
-  overflow-x: auto;
 }
 
 .preview .doc-body th {

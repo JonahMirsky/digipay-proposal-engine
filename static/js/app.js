@@ -503,6 +503,15 @@ function renderPreview(el, data) {
   pages += flushPage();
 
   el.innerHTML = coverPage + pages;
+
+  // Wrap tables in scrollable containers for mobile
+  el.querySelectorAll('.doc-body table').forEach(table => {
+    if (table.parentElement.classList.contains('table-scroll')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'table-scroll';
+    table.parentNode.insertBefore(wrap, table);
+    wrap.appendChild(table);
+  });
 }
 
 /* ── PDF ── */
