@@ -159,6 +159,9 @@ def view_doc(token):
     if not entry or time.time() - entry['ts'] > HTML_EXPIRY:
         return 'This link has expired.', 404
 
+    from datetime import datetime as dt, timezone as tz
+    generated_at = dt.fromtimestamp(entry['ts'], tz.utc).strftime('%Y-%m-%d %H:%M')
+
     doc = entry['doc']
     return render_template('view.html',
                            title=doc.get('title', 'Document'),
@@ -166,7 +169,8 @@ def view_doc(token):
                            meta=doc.get('meta', {}),
                            brand_name=entry['brand_name'],
                            accent_color=entry['accent_color'],
-                           logo=entry['logo'])
+                           logo=entry['logo'],
+                           generated_at=generated_at)
 
 
 BUG_REPORT_REPO = os.environ.get('BUG_REPORT_REPO', 'JonahMirsky/digipay-proposal-engine')

@@ -1220,7 +1220,7 @@ textarea::placeholder { color: var(--text-dim); }
 
 .form-hint {
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--text-mid);
   margin: 0;
 }
 
@@ -1233,7 +1233,7 @@ textarea::placeholder { color: var(--text-dim); }
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--text-mid);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 6px;
@@ -1336,7 +1336,7 @@ textarea::placeholder { color: var(--text-dim); }
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--text-mid);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
@@ -1353,7 +1353,7 @@ textarea::placeholder { color: var(--text-dim); }
   flex: 1;
   font-size: 10px;
   font-weight: 700;
-  color: var(--text-dim);
+  color: var(--text-mid);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1437,7 +1437,7 @@ textarea::placeholder { color: var(--text-dim); }
   background: none;
   border: 1px dashed var(--border-light);
   border-radius: var(--radius-xs);
-  color: var(--text-dim);
+  color: var(--text-mid);
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -1668,6 +1668,308 @@ textarea::placeholder { color: var(--text-dim); }
   border-color: var(--card-accent, var(--accent));
   background: rgba(255,255,255,0.05);
   transform: translateX(2px);
+}
+
+/* ── INLINE EDITING (Change 3) ── */
+.editable {
+  outline: none;
+  transition: background 0.15s;
+  border-radius: 2px;
+}
+
+.editable:hover {
+  background: rgba(118, 215, 250, 0.05);
+}
+
+.editable:focus {
+  background: rgba(118, 215, 250, 0.08);
+  box-shadow: 0 0 0 2px rgba(118, 215, 250, 0.15);
+}
+
+.row-action-cell {
+  width: 30px !important;
+  padding: 4px !important;
+  text-align: center;
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+.row-delete-btn {
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #999;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.row-delete-btn:hover {
+  border-color: #f87171;
+  color: #f87171;
+  background: rgba(248,113,113,0.08);
+}
+
+.add-table-row-btn {
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+  margin: 4px 0 12px;
+  background: none;
+  border: 1px dashed #ddd;
+  border-radius: 6px;
+  color: #999;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.add-table-row-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(118,215,250,0.05);
+}
+
+/* ── FORMAT TOOLBAR ── */
+.format-toolbar {
+  position: absolute;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a40;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.format-toolbar.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.format-toolbar button {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: #ccc;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+
+.format-toolbar button:hover {
+  background: rgba(118,215,250,0.15);
+  color: #fff;
+}
+
+.format-toolbar select {
+  height: 28px;
+  background: #12121f;
+  border: 1px solid #2a2a40;
+  border-radius: 4px;
+  color: #ccc;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 0 4px;
+  cursor: pointer;
+  outline: none;
+}
+
+.format-toolbar select:hover {
+  border-color: rgba(118,215,250,0.3);
+}
+
+.fmt-sep {
+  width: 1px;
+  height: 18px;
+  background: #2a2a40;
+  margin: 0 3px;
+}
+
+/* Custom brand footer extras */
+.doc-footer-extra {
+  padding: 8px 44px;
+  background: #f0f1f3;
+  font-size: 11px;
+  color: #888;
+  text-align: center;
+}
+
+/* ── CUSTOM BRAND MODAL (Change 4) ── */
+.custom-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.custom-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+}
+
+.custom-modal-content {
+  position: relative;
+  width: 90%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg-elevated, #0c0c12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+}
+
+.custom-modal-content h2 {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.custom-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.custom-modal-close:hover {
+  border-color: var(--text-mid);
+  color: var(--text);
+}
+
+.custom-logo-upload {
+  border: 1.5px dashed var(--border-light);
+  border-radius: var(--radius-xs);
+  padding: 16px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.custom-logo-upload:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+
+.custom-logo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.custom-logo-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.custom-logo-preview img {
+  max-height: 40px;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+.custom-logo-clear {
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-logo-clear:hover {
+  border-color: #f87171;
+  color: #f87171;
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-picker-row input[type="color"] {
+  width: 40px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.color-hex {
+  font-size: 13px;
+  color: var(--text-mid);
+  font-family: monospace;
+}
+
+.required {
+  color: #f87171;
+}
+
+.custom-brand-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-dim);
+  border: 1.5px dashed var(--accent-border);
+  border-radius: 10px;
+  color: var(--accent);
+}
+
+.custom-brand-card {
+  border-style: dashed !important;
 }
 
 /* ── RESPONSIVE ── */

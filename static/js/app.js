@@ -81,7 +81,7 @@ let cycleInterval = null;
 function startBrandCycle() {
   const img = $('home-cycle-img');
   if (!img) return;
-  const brandList = Object.values(BRANDS);
+  const brandList = Object.entries(BRANDS).filter(([id]) => id !== '_custom').map(([, b]) => b);
   let idx = 0;
 
   function tick() {
@@ -254,6 +254,7 @@ function populateBrandDropdown() {
   const dd = $('nav-brand-dropdown');
   dd.innerHTML = '';
   for (const [id, brand] of Object.entries(BRANDS)) {
+    if (id === '_custom') continue;
     if (currentBrand && currentBrand.id === id) continue;
     const item = document.createElement('button');
     item.className = 'brand-dd-item';
@@ -264,6 +265,16 @@ function populateBrandDropdown() {
     };
     dd.appendChild(item);
   }
+
+  // Custom Brand option
+  const customItem = document.createElement('button');
+  customItem.className = 'brand-dd-item';
+  customItem.innerHTML = `<span style="font-size:14px;color:var(--text-mid);display:flex;align-items:center;gap:6px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Custom Brand</span>`;
+  customItem.onclick = () => {
+    closeBrandDropdown();
+    showCustomBrandForm();
+  };
+  dd.appendChild(customItem);
 }
 
 function toggleBrandDropdown(e) {
@@ -453,56 +464,76 @@ function renderPreview(el, data) {
   let metaLine = [meta.prepared_for, meta.date].filter(Boolean).join(' · ');
   if (!metaLine) metaLine = `${brandName} Branded Document`;
 
-  const footerHtml = `<div class="doc-footer"><span>Confidential</span><span>Prepared by ${brandName}</span></div>`;
+  const footerHtml = `<div class="doc-footer"><span>Confidential</span><span>${brandName}</span></div>`;
 
-  // Build cover page
-  const coverPage = `<div class="doc-page">
-    <div class="doc-header">
-      <img src="${logoWhite}" alt="${brandName}">
-      <h1>${data.title || 'Document'}</h1>
-      <div class="doc-meta">${metaLine}</div>
-    </div>
-    <div class="doc-body">${(data.sections && data.sections.length) ? `<h2>${data.sections[0].heading}</h2>${data.sections[0].content}` : ''}</div>
-    ${footerHtml}
-  </div>`;
+  // Custom brand footer extras (Change 4)
+  let customFooterExtra = '';
+  if (currentBrand && currentBrand.isCustom) {
+    const parts = [];
+    if (currentBrand.companyUrl) parts.push(currentBrand.companyUrl);
+    if (currentBrand.companyAddress) parts.push(currentBrand.companyAddress);
+    if (parts.length) {
+      customFooterExtra = `<div class="doc-footer-extra">${parts.join(' &middot; ')}</div>`;
+    }
+  }
 
-  // Remaining sections — group into pages
-  const sections = (data.sections || []).slice(1);
-  let pages = '';
+  // Calculate total content size to decide pagination (Change 2)
+  const allSections = data.sections || [];
+  const totalLen = allSections.reduce((sum, s) => sum + (s.heading || '').length + (s.content || '').length, 0);
   const PAGE_CHAR_LIMIT = 3000;
-  let pageBuf = '';
-  let pageBufLen = 0;
 
-  function flushPage() {
-    if (!pageBuf) return '';
-    const html = `<div class="doc-page"><div class="doc-body">${pageBuf}</div>${footerHtml}</div>`;
-    pageBuf = '';
-    pageBufLen = 0;
-    return html;
-  }
+  if (totalLen <= PAGE_CHAR_LIMIT) {
+    // Single page — all content fits (Change 2)
+    const bodyHtml = allSections.map(s => `<h2>${s.heading}</h2>${s.content}`).join('');
+    el.innerHTML = `<div class="doc-page">
+      <div class="doc-header">
+        <img src="${logoWhite}" alt="${brandName}">
+        <h1>${data.title || 'Document'}</h1>
+        <div class="doc-meta">${metaLine}</div>
+      </div>
+      <div class="doc-body">${bodyHtml}</div>
+      ${customFooterExtra}${footerHtml}
+    </div>`;
+  } else {
+    // Multi-page — cover page gets first section, rest paginated
+    const coverPage = `<div class="doc-page">
+      <div class="doc-header">
+        <img src="${logoWhite}" alt="${brandName}">
+        <h1>${data.title || 'Document'}</h1>
+        <div class="doc-meta">${metaLine}</div>
+      </div>
+      <div class="doc-body">${allSections.length ? `<h2>${allSections[0].heading}</h2>${allSections[0].content}` : ''}</div>
+      ${customFooterExtra}${footerHtml}
+    </div>`;
 
-  for (const s of sections) {
-    const secHtml = `<h2>${s.heading}</h2>${s.content}`;
-    const secLen = s.heading.length + (s.content || '').length;
+    const remaining = allSections.slice(1);
+    let pages = '';
+    let pageBuf = '';
+    let pageBufLen = 0;
 
-    // If adding this section would overflow, flush current page first
-    if (pageBufLen > 0 && pageBufLen + secLen > PAGE_CHAR_LIMIT) {
-      pages += flushPage();
+    function flushPage() {
+      if (!pageBuf) return '';
+      const html = `<div class="doc-page"><div class="doc-body">${pageBuf}</div>${footerHtml}</div>`;
+      pageBuf = '';
+      pageBufLen = 0;
+      return html;
     }
 
-    pageBuf += secHtml;
-    pageBufLen += secLen;
-
-    // If this single section is already big enough, flush it as its own page
-    if (pageBufLen >= PAGE_CHAR_LIMIT) {
-      pages += flushPage();
+    for (const s of remaining) {
+      const secHtml = `<h2>${s.heading}</h2>${s.content}`;
+      const secLen = s.heading.length + (s.content || '').length;
+      if (pageBufLen > 0 && pageBufLen + secLen > PAGE_CHAR_LIMIT) {
+        pages += flushPage();
+      }
+      pageBuf += secHtml;
+      pageBufLen += secLen;
+      if (pageBufLen >= PAGE_CHAR_LIMIT) {
+        pages += flushPage();
+      }
     }
+    pages += flushPage();
+    el.innerHTML = coverPage + pages;
   }
-
-  // Flush any remaining content
-  pages += flushPage();
-
-  el.innerHTML = coverPage + pages;
 
   // Wrap tables in scrollable containers for mobile
   el.querySelectorAll('.doc-body table').forEach(table => {
@@ -512,13 +543,16 @@ function renderPreview(el, data) {
     table.parentNode.insertBefore(wrap, table);
     wrap.appendChild(table);
   });
+
+  // Enable inline editing (Change 3)
+  enableInlineEditing(el);
 }
 
 /* ── PDF ── */
 
 async function downloadPdf() {
-  const data = result;
-  if (!data) return;
+  const data = captureCurrentDoc();
+  if (!data || !data.sections || !data.sections.length) return;
 
   const brandName = currentBrand ? currentBrand.name : 'DigiPay';
   const accent = currentBrand ? currentBrand.accent : '#76D7FA';
@@ -542,8 +576,8 @@ async function downloadPdf() {
 /* ── Copy Share Link ── */
 
 async function copyShareLink() {
-  const data = result;
-  if (!data) return;
+  const data = captureCurrentDoc();
+  if (!data || !data.sections || !data.sections.length) return;
 
   const brandName = currentBrand ? currentBrand.name : 'DigiPay';
   const accent = currentBrand ? currentBrand.accent : '#76D7FA';
@@ -593,8 +627,8 @@ async function copyShareLink() {
 /* ── Share ── */
 
 async function share(platform) {
-  const data = result;
-  if (!data) return;
+  const data = captureCurrentDoc();
+  if (!data || !data.sections || !data.sections.length) return;
 
   const brandName = currentBrand ? currentBrand.name : 'DigiPay';
   const accent = currentBrand ? currentBrand.accent : '#76D7FA';
@@ -640,6 +674,316 @@ async function share(platform) {
       }
       break;
   }
+}
+
+/* ── Inline Editing (Change 3) ── */
+
+function ensureFormatToolbar() {
+  if ($('format-toolbar')) return;
+  const tb = document.createElement('div');
+  tb.id = 'format-toolbar';
+  tb.className = 'format-toolbar';
+  tb.innerHTML = `
+    <button onmousedown="event.preventDefault();document.execCommand('bold')" title="Bold"><b>B</b></button>
+    <button onmousedown="event.preventDefault();document.execCommand('italic')" title="Italic"><i>I</i></button>
+    <button onmousedown="event.preventDefault();document.execCommand('underline')" title="Underline"><u>U</u></button>
+    <button onmousedown="event.preventDefault();document.execCommand('strikeThrough')" title="Strikethrough"><s>S</s></button>
+    <span class="fmt-sep"></span>
+    <select onchange="document.execCommand('fontSize',false,this.value);this.value=''" title="Font Size">
+      <option value="" disabled selected>Size</option>
+      <option value="1">Small</option>
+      <option value="3">Normal</option>
+      <option value="5">Large</option>
+      <option value="7">Huge</option>
+    </select>
+    <select onchange="document.execCommand('fontName',false,this.value);this.value=''" title="Font">
+      <option value="" disabled selected>Font</option>
+      <option value="Archivo">Archivo</option>
+      <option value="Helvetica">Helvetica</option>
+      <option value="Georgia">Georgia</option>
+      <option value="Courier New">Courier</option>
+    </select>
+    <span class="fmt-sep"></span>
+    <button onmousedown="event.preventDefault();document.execCommand('justifyLeft')" title="Align Left">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+    </button>
+    <button onmousedown="event.preventDefault();document.execCommand('justifyCenter')" title="Align Center">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+    <button onmousedown="event.preventDefault();document.execCommand('justifyRight')" title="Align Right">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  `;
+  document.body.appendChild(tb);
+
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) { tb.classList.remove('visible'); return; }
+    const anchor = sel.anchorNode && sel.anchorNode.closest ? sel.anchorNode : (sel.anchorNode ? sel.anchorNode.parentElement : null);
+    if (!anchor || !anchor.closest || !anchor.closest('.editable')) { tb.classList.remove('visible'); return; }
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (rect.width === 0) { tb.classList.remove('visible'); return; }
+    tb.style.top = (rect.top + window.scrollY - 44) + 'px';
+    tb.style.left = Math.max(8, rect.left + rect.width / 2 - 160) + 'px';
+    tb.classList.add('visible');
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('#format-toolbar')) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) tb.classList.remove('visible');
+    }, 100);
+  });
+}
+
+function enableInlineEditing(el) {
+  ensureFormatToolbar();
+  el.querySelectorAll('.doc-header h1, .doc-header .doc-meta, .doc-body h2, .doc-body p, .doc-body td, .doc-body th, .doc-body li').forEach(node => {
+    node.setAttribute('contenteditable', 'true');
+    node.classList.add('editable');
+  });
+
+  el.querySelectorAll('.doc-body table').forEach(table => {
+    const rows = table.querySelectorAll('tbody tr');
+    const allRows = rows.length ? rows : table.querySelectorAll('tr:not(:first-child)');
+    allRows.forEach(tr => {
+      if (tr.querySelector('.row-action-cell')) return;
+      const td = document.createElement('td');
+      td.className = 'row-action-cell';
+      td.contentEditable = 'false';
+      td.innerHTML = '<button class="row-delete-btn" onclick="this.closest(\'tr\').remove()" title="Delete row">&times;</button>';
+      tr.appendChild(td);
+    });
+
+    const thead = table.querySelector('thead tr');
+    if (thead && !thead.querySelector('.row-action-cell')) {
+      const th = document.createElement('th');
+      th.className = 'row-action-cell';
+      th.style.width = '30px';
+      thead.appendChild(th);
+    }
+
+    const scrollWrap = table.closest('.table-scroll') || table.parentNode;
+    if (!scrollWrap.nextElementSibling || !scrollWrap.nextElementSibling.classList.contains('add-table-row-btn')) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-table-row-btn';
+      addBtn.textContent = '+ Add row';
+      addBtn.contentEditable = 'false';
+      addBtn.onclick = function() {
+        const tbody = table.querySelector('tbody') || table;
+        const lastRow = tbody.querySelector('tr:last-child');
+        if (!lastRow) return;
+        const newRow = lastRow.cloneNode(true);
+        newRow.querySelectorAll('td:not(.row-action-cell)').forEach(cell => {
+          cell.textContent = '';
+          cell.setAttribute('contenteditable', 'true');
+          cell.classList.add('editable');
+        });
+        tbody.appendChild(newRow);
+      };
+      scrollWrap.parentNode.insertBefore(addBtn, scrollWrap.nextSibling);
+    }
+  });
+}
+
+function getActivePreview() {
+  const convertResult = $('v-result');
+  if (convertResult && convertResult.classList.contains('active')) return $('preview');
+  const tplResult = $('v-tpl-result');
+  if (tplResult && tplResult.classList.contains('active')) return $('tpl-preview');
+  return $('preview');
+}
+
+function captureCurrentDoc() {
+  const el = getActivePreview();
+  if (!el || !el.querySelector('.doc-page')) return result;
+
+  const titleEl = el.querySelector('.doc-header h1');
+  const title = titleEl ? titleEl.textContent.trim() : (result ? result.title : 'Document');
+
+  const sections = [];
+  el.querySelectorAll('.doc-body').forEach(body => {
+    let currentHeading = null;
+    let currentContent = '';
+
+    for (const child of body.children) {
+      if (child.tagName === 'H2') {
+        if (currentHeading !== null) {
+          sections.push({ heading: currentHeading, content: currentContent });
+        }
+        currentHeading = child.textContent.trim();
+        currentContent = '';
+      } else {
+        if (child.classList && child.classList.contains('add-table-row-btn')) continue;
+        const clone = child.cloneNode(true);
+        clone.querySelectorAll('.row-action-cell, .add-table-row-btn').forEach(n => n.remove());
+        clone.querySelectorAll('[contenteditable]').forEach(n => n.removeAttribute('contenteditable'));
+        clone.querySelectorAll('.editable').forEach(n => n.classList.remove('editable'));
+        if (clone.classList && clone.classList.contains('table-scroll')) {
+          currentContent += clone.innerHTML;
+        } else {
+          currentContent += clone.outerHTML;
+        }
+      }
+    }
+    if (currentHeading !== null) {
+      sections.push({ heading: currentHeading, content: currentContent });
+    }
+  });
+
+  return {
+    title,
+    sections,
+    meta: result ? result.meta : {},
+  };
+}
+
+/* ── Custom Brand (Change 4) ── */
+
+function generateTextLogo(name, color) {
+  const escaped = name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const width = Math.max(escaped.length * 14, 80);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 36"><text x="0" y="28" font-family="Helvetica,Arial,sans-serif" font-size="24" font-weight="800" fill="${color}">${escaped.toUpperCase()}</text></svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+let _customLogoDataUrl = '';
+
+function showCustomBrandForm() {
+  const existing = $('custom-brand-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'custom-brand-modal';
+  modal.className = 'custom-modal';
+  modal.innerHTML = `
+    <div class="custom-modal-backdrop" onclick="closeCustomBrandForm()"></div>
+    <div class="custom-modal-content">
+      <button class="custom-modal-close" onclick="closeCustomBrandForm()">&times;</button>
+      <h2>Custom Brand</h2>
+      <p class="form-desc">Enter your company details to generate branded documents.</p>
+      <div class="form-group">
+        <label>Company Name <span class="required">*</span></label>
+        <input type="text" id="custom-company-name" placeholder="Your Company Name">
+      </div>
+      <div class="form-group">
+        <label>Logo (PNG/JPG, optional)</label>
+        <div class="custom-logo-upload" id="custom-logo-drop">
+          <input type="file" id="custom-logo-file" accept="image/png,image/jpeg" hidden>
+          <div id="custom-logo-preview" class="custom-logo-preview hide">
+            <img id="custom-logo-img" src="" alt="Logo preview">
+            <button type="button" onclick="clearCustomLogo(event)" class="custom-logo-clear">&times;</button>
+          </div>
+          <div id="custom-logo-placeholder" class="custom-logo-placeholder">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Upload logo</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Brand Color</label>
+        <div class="color-picker-row">
+          <input type="color" id="custom-brand-color" value="#3b82f6">
+          <span id="custom-color-hex" class="color-hex">#3b82f6</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Company URL (optional)</label>
+        <input type="text" id="custom-company-url" placeholder="https://yourcompany.com">
+      </div>
+      <div class="form-group">
+        <label>Company Address (optional)</label>
+        <input type="text" id="custom-company-address" placeholder="123 Main St, City, Country">
+      </div>
+      <div id="custom-brand-err" class="err"></div>
+      <button class="btn" onclick="submitCustomBrand()">
+        <span>Continue</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const logoFile = $('custom-logo-file');
+  const logoDrop = $('custom-logo-drop');
+  logoDrop.addEventListener('click', (e) => {
+    if (e.target.closest('.custom-logo-clear')) return;
+    logoFile.click();
+  });
+  logoFile.addEventListener('change', () => {
+    if (logoFile.files.length) handleCustomLogo(logoFile.files[0]);
+  });
+
+  const colorInput = $('custom-brand-color');
+  colorInput.addEventListener('input', () => {
+    $('custom-color-hex').textContent = colorInput.value;
+  });
+
+  setTimeout(() => $('custom-company-name').focus(), 100);
+}
+
+function handleCustomLogo(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    _customLogoDataUrl = e.target.result;
+    $('custom-logo-img').src = _customLogoDataUrl;
+    $('custom-logo-preview').classList.remove('hide');
+    $('custom-logo-placeholder').classList.add('hide');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearCustomLogo(e) {
+  if (e) e.stopPropagation();
+  _customLogoDataUrl = '';
+  $('custom-logo-file').value = '';
+  $('custom-logo-preview').classList.add('hide');
+  $('custom-logo-placeholder').classList.remove('hide');
+}
+
+function closeCustomBrandForm() {
+  const modal = $('custom-brand-modal');
+  if (modal) modal.remove();
+}
+
+function submitCustomBrand() {
+  const name = $('custom-company-name').value.trim();
+  if (!name) {
+    $('custom-brand-err').textContent = 'Company name is required.';
+    $('custom-company-name').focus();
+    return;
+  }
+
+  const accent = $('custom-brand-color').value;
+  const url = $('custom-company-url').value.trim();
+  const address = $('custom-company-address').value.trim();
+
+  const logoWhite = _customLogoDataUrl || generateTextLogo(name, '#ffffff');
+  const logoDark = _customLogoDataUrl || generateTextLogo(name, accent);
+
+  const r = parseInt(accent.slice(1, 3), 16);
+  const g = parseInt(accent.slice(3, 5), 16);
+  const b = parseInt(accent.slice(5, 7), 16);
+
+  BRANDS['_custom'] = {
+    name: name,
+    tagline: url || 'Custom Brand',
+    accent: accent,
+    bg: `rgb(${Math.round(r * 0.05)}, ${Math.round(g * 0.05)}, ${Math.round(b * 0.05)})`,
+    surface: `rgb(${Math.round(r * 0.1)}, ${Math.round(g * 0.1)}, ${Math.round(b * 0.1)})`,
+    gradientEnd: accent,
+    logo: logoDark,
+    logoWhite: logoWhite,
+    isCustom: true,
+    companyUrl: url,
+    companyAddress: address,
+  };
+
+  closeCustomBrandForm();
+  _customLogoDataUrl = '';
+  selectBrand('_custom');
 }
 
 /* ── Report Bug ── */
@@ -1268,7 +1612,29 @@ async function submitTemplate(e) {
 function populateBrandCards() {
   const grid = $('brand-grid');
   grid.innerHTML = '';
+
+  // Custom Brand card first (Change 4)
+  const customCard = document.createElement('div');
+  customCard.className = 'brand-card custom-brand-card';
+  customCard.onclick = () => showCustomBrandForm();
+  customCard.innerHTML = `
+    <div class="brand-card-logo">
+      <div class="custom-brand-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+    </div>
+    <div class="brand-card-info">
+      <h3>Custom Brand</h3>
+      <p>Use your own company</p>
+    </div>
+    <div class="brand-card-arrow">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </div>
+  `;
+  grid.appendChild(customCard);
+
   for (const [id, brand] of Object.entries(BRANDS)) {
+    if (id === '_custom') continue;
     const card = document.createElement('div');
     card.className = 'brand-card';
     card.style.setProperty('--card-accent', brand.accent);
