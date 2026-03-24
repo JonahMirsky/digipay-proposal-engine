@@ -550,27 +550,50 @@ function renderPreview(el, data) {
 
 /* ── PDF ── */
 
-async function downloadPdf() {
-  const data = captureCurrentDoc();
-  if (!data || !data.sections || !data.sections.length) return;
+function _loadHtml2Pdf() {
+  if (window.html2pdf) return Promise.resolve(window.html2pdf);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
+    s.onload = () => resolve(window.html2pdf);
+    s.onerror = () => reject(new Error('Failed to load PDF library'));
+    document.head.appendChild(s);
+  });
+}
 
+async function downloadPdf() {
+  const el = getActivePreview();
+  if (!el || !el.querySelector('.doc-page')) return;
+
+  const data = captureCurrentDoc();
   const brandName = currentBrand ? currentBrand.name : 'DigiPay';
-  const accent = currentBrand ? currentBrand.accent : '#76D7FA';
+  const filename = `${(data && data.title ? data.title : `${brandName}-Document`).replace(/\s+/g, '-')}.pdf`;
+
+  // Find the PDF button and show loading state
+  const btn = event && event.target ? event.target.closest('button') : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
 
   try {
-    const r = await fetch('/api/pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, brand_name: brandName, accent_color: accent }),
-    });
-    if (!r.ok) throw new Error('PDF generation failed');
-    const blob = await r.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${(data.title || `${brandName}-Document`).replace(/\s+/g, '-')}.pdf`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } catch (e) { alert(e.message); }
+    const html2pdf = await _loadHtml2Pdf();
+    const page = el.querySelector('.doc-page');
+    // Hide non-printable UI elements
+    const noPrint = page.querySelectorAll('.add-table-row-btn, .row-action-cell, .formatting-toolbar');
+    noPrint.forEach(n => n.style.display = 'none');
+    await html2pdf().set({
+      margin: [10, 0, 10, 0],
+      filename,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+    }).from(page).save();
+    noPrint.forEach(n => n.style.display = '');
+  } catch (e) {
+    console.error('PDF export failed:', e);
+    alert('PDF generation failed: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'PDF'; }
+  }
 }
 
 /* ── Copy Share Link ── */
